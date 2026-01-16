@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 
 test_route=APIRouter(prefix="/test")
 # 测试接口
-@test_route.post('/api/hello')
+@test_route.get('/api/hello')
 def hello(request:Request):
     data = request.json() or {}
     name = data.get('name', '未知用户')
@@ -29,6 +29,7 @@ def health_check():
 if __name__ == '__main__':
 
     app=FastAPI()
+    app.include_router(test_route)
     uvicorn.run(
         app,
         host='127.0.0.1',
