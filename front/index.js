@@ -3,24 +3,32 @@ import { spawn } from 'child_process';
 import  path  from 'path';
 import  net  from 'net';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
 // 在 ES 模块中获取 __dirname 的等价物
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// 创建 require 函数用于加载 CommonJS 模块
+const require = createRequire(import.meta.url);
+
 // 1. 引入并配置 electron-reload（仅在开发环境使用）
-// 使用动态导入以避免 ES 模块兼容性问题
-if (process.env.NODE_ENV !== 'production') {
-  try {
-    const electronReload = (await import('electron-reload')).default;
-    electronReload(__dirname, {
-      electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
-      extensions: ['js', 'html', 'css']
-    });
-  } catch (error) {
-    console.warn('electron-reload 加载失败，继续运行:', error.message);
-  }
+
+try {
+  const electronReload = require('electron-reload');
+  electronReload(__dirname, {
+    electron: process.execPath, // 使用当前运行的 electron 路径
+    hardResetMethod: 'exit',
+    extensions: ['js', 'html', 'css']
+  });
+  console.log('electron-reload 已启用');
+} catch (error) {
+  console.warn('electron-reload 加载失败，继续运行:', error.message);
+  console.error(error);
 }
+
+
+
 
 
 let mainWindow;
