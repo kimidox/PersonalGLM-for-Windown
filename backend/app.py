@@ -10,7 +10,7 @@ test_route=APIRouter(prefix="/test")
 @test_route.get('/api/hello')
 def hello(request:Request):
     data = request.json() or {}
-    name = data.get('name', '未知用户')
+    name = "测试用户"
     return JSONResponse({
         "code": 200,
         "message": f"你好 {name}！Python HTTP服务已正常响应",
