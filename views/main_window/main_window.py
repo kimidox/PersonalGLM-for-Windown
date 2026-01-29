@@ -27,7 +27,7 @@ class BaseDraggableInfoWidget(QFrame):
     def __init__(self, parent=None,name=None):
         super().__init__(parent)
         self.setFrameShape(QFrame.StyledPanel)
-        self.setFixedSize(220, 80)
+        self.setFixedSize(220, 150)
         self._dragging = False
         self._drag_offset = QPoint(0, 0)
         self.id=str(uuid.uuid4())
@@ -42,21 +42,30 @@ class BaseDraggableInfoWidget(QFrame):
         self._line_edit.editingFinished.connect(self._on_text_changed)
         self._line_edit.hide()
 
+        # 创建标题标签
+        self._title_label = QLabel("可拖拽信息组件", self)
+        self._title_label.setObjectName("draggableInfoTitle")
+
         # 创建右上角关闭按钮
         self._close_button = QPushButton("×", self)
         self._close_button.setObjectName("closeButton")
-        self._close_button.setFixedSize(24, 24)
+        self._close_button.setFixedSize(8, 8)  # 增大按钮尺寸，便于点击和显示
         self._close_button.clicked.connect(self._on_close_clicked)
-        # 设置按钮位置到右上角
-        self._close_button.move(self.width() - 24 - 5, 5)
 
+        # 创建水平布局：标题在左，关闭按钮在右
+        layout_h = QHBoxLayout()  # 注意：不要传入 self
+        layout_h.setContentsMargins(0, 0, 0, 0)  # 水平布局不需要边距
+        layout_h.addStretch(1)  # 中间弹性空间，将按钮推到右边
+        layout_h.addWidget(self._close_button)  # 关闭按钮在右边
+
+        # 创建主垂直布局
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(8)
 
-        self._title_label = QLabel("可拖拽信息组件", self)
-        self._title_label.setObjectName("draggableInfoTitle")
-        layout.addWidget(self._title_label)
+        # 将水平布局（包含标题和关闭按钮）添加到垂直布局的第一行
+        layout.addLayout(layout_h)  # 取消注释，添加水平布局
+        layout.addWidget(self._title_label)  # 标题在左边
         layout.addWidget(self._button)
         layout.addWidget(self._line_edit)
 
