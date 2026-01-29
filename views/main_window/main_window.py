@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QFrame,
     QComboBox,
+    QStackedWidget,
 )
 
 
@@ -33,18 +34,23 @@ class BaseDraggableInfoWidget(QFrame):
         self.id=str(uuid.uuid4())
         self._mode = "button"
         self._text = f"{name}"
+        self._title_label_text="可拖拽信息组件"
 
         self._button = QPushButton(self._text, self)
         self._button.clicked.connect(self._on_button_clicked)
 
         self._line_edit = QLineEdit(self)
-        self._line_edit.setText(self._text)
+        self._line_edit.setText(self._title_label_text)
         self._line_edit.editingFinished.connect(self._on_text_changed)
-        self._line_edit.hide()
 
         # 创建标题标签
-        self._title_label = QLabel("可拖拽信息组件", self)
+        self._title_label = QLabel(self._title_label_text, self)
         self._title_label.setObjectName("draggableInfoTitle")
+
+        # 使用 QStackedWidget：同一区域切换显示“标题”或“输入框”，避免布局跳动
+        self._stacked = QStackedWidget(self)
+        self._stacked.addWidget(self._title_label)   # 索引 0：button 模式
+        self._stacked.addWidget(self._line_edit)     # 索引 1：editable 模式
 
         # 创建右上角关闭按钮
         self._close_button = QPushButton("×", self)
@@ -53,22 +59,18 @@ class BaseDraggableInfoWidget(QFrame):
         self._close_button.clicked.connect(self._on_close_clicked)
 
         # 创建水平布局：标题在左，关闭按钮在右
-        layout_h = QHBoxLayout()  # 注意：不要传入 self
-        layout_h.setContentsMargins(0, 0, 0, 0)  # 水平布局不需要边距
-        layout_h.addStretch(1)  # 中间弹性空间，将按钮推到右边
-        layout_h.addWidget(self._close_button)  # 关闭按钮在右边
+        layout_h = QHBoxLayout()
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        layout_h.addStretch(1)
+        layout_h.addWidget(self._close_button)
 
-        # 创建主垂直布局
+        # 主垂直布局：第一行关闭按钮，第二行堆叠（标题/输入框），第三行按钮
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(8)
-
-        # 将水平布局（包含标题和关闭按钮）添加到垂直布局的第一行
-        layout.addLayout(layout_h)  # 取消注释，添加水平布局
-        layout.addWidget(self._title_label)  # 标题在左边
+        layout.addLayout(layout_h)
+        layout.addWidget(self._stacked)  # 第二行固定为 stacked，只切换当前页
         layout.addWidget(self._button)
-        layout.addWidget(self._line_edit)
-
         self.setLayout(layout)
 
     def _on_close_clicked(self):
@@ -84,13 +86,11 @@ class BaseDraggableInfoWidget(QFrame):
             return
         self._mode = mode
         if mode == "button":
-            self._button.setText(self._text)
-            self._button.show()
-            self._line_edit.hide()
+            self._title_label.setText(self._title_label_text)
+            self._stacked.setCurrentIndex(0)  # 显示标题页
         else:
-            self._line_edit.setText(self._text)
-            self._line_edit.show()
-            self._button.hide()
+            self._line_edit.setText(self._title_label_text)
+            self._stacked.setCurrentIndex(1)  # 显示输入框页
 
     def mode(self) -> str:
         return self._mode
@@ -107,8 +107,9 @@ class BaseDraggableInfoWidget(QFrame):
         print(f"[DraggableInfoWidget] 按钮被点击，当前文本: {self._text}")
 
     def _on_text_changed(self):
-        self._text = self._line_edit.text()
-        self._button.setText(self._text)
+        text = self._line_edit.text()
+        self._title_label_text=text
+        # self._button.setText(self._text)
 
     # ---- 拖拽相关事件 ----
     def mousePressEvent(self, event):
@@ -169,7 +170,7 @@ class MainWindow(QMainWindow):
         self.mode_combo = QComboBox(top_bar)
         self.mode_combo.addItem("按钮模式", userData="button")
         self.mode_combo.addItem("可编辑文本模式", userData="editable")
-        # self.mode_combo.currentIndexChanged.connect(self.on_mode_changed)
+        self.mode_combo.currentIndexChanged.connect(self.on_mode_changed)
 
         hint_label = QLabel("提示：按aaa住信息组件区域空白处拖拽即可移动位置。", top_bar)
         hint_label.setObjectName("hintLabel")
