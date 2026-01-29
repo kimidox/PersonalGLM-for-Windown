@@ -1,0 +1,70 @@
+/* ---- 主窗口整体暗色风格 ---- */
+QMainWindow {
+    background-color: #18191c;
+}
+
+QLabel {
+    color: #e0e0e0;
+}
+
+QComboBox {
+    background-color: #1f2022;
+    border-radius: 4px;
+    border: 1px solid #555a60;
+    padding: 4px 6px;
+    color: #f0f0f0;
+}
+
+#hintLabel {
+    color: #a0a0a0;
+}
+
+/* ---- 可拖拽信息组件相关样式 ---- */
+QFrame {
+    background-color: #2d2f31;
+    border-radius: 8px;
+    border: 1px solid #4a4d50;
+}
+
+QPushButton {
+    background-color: #3a7afe;
+    border-radius: 6px;
+    color: white;
+    padding: 6px 12px;
+}
+
+QPushButton:hover {
+    background-color: #346de3;
+}
+
+/* 关闭按钮样式 */
+QPushButton#closeButton {
+    background-color: #4a4d50;
+    border-radius: 12px;
+    color: #e0e0e0;
+    padding: 0px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+}
+
+QPushButton#closeButton:hover {
+    background-color: #e74c3c;
+    color: white;
+}
+
+QLineEdit {
+    background-color: #1f2022;
+    border-radius: 4px;
+    border: 1px solid #555a60;
+    padding: 4px 6px;
+    color: #f0f0f0;
+}
+
+/* 中心画布区域 */
+QFrame#canvas {
+    background-color: #202226;
+    border-radius: 8px;
+    border: 1px solid #323438;
+}
+
