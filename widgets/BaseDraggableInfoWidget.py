@@ -11,6 +11,13 @@ class BaseDraggableInfoWidget(QFrame):
     """
     # 定义删除信号，传递组件自身作为参数
     delete_requested = Signal(object)
+    # 连接点被点击：自身、边（"left"/"right"）
+    connector_clicked = Signal(object, str)
+    # 组件被移动，用于连线覆盖层重绘
+    moved = Signal()
+    input_data={}
+    output_data={}
+    node_data={}
 
     def __init__(self, parent=None,name=None):
         super().__init__(parent)
@@ -44,6 +51,17 @@ class BaseDraggableInfoWidget(QFrame):
         self._close_button.setObjectName("closeButton")
         self._close_button.setFixedSize(8, 8)  # 增大按钮尺寸，便于点击和显示
         self._close_button.clicked.connect(self._on_close_clicked)
+
+        # 左右两侧连接点按钮（“+”号）
+        self._left_connector = QPushButton("+", self)
+        self._left_connector.setObjectName("leftConnector")
+        self._left_connector.setFixedSize(16, 16)
+        self._left_connector.clicked.connect(lambda: self._on_connector_clicked("left"))
+
+        self._right_connector = QPushButton("+", self)
+        self._right_connector.setObjectName("rightConnector")
+        self._right_connector.setFixedSize(16, 16)
+        self._right_connector.clicked.connect(lambda: self._on_connector_clicked("right"))
 
         # 创建水平布局：标题在左，关闭按钮在右
         layout_h = QHBoxLayout()
@@ -98,12 +116,27 @@ class BaseDraggableInfoWidget(QFrame):
         self._title_label_text=text
         # self._button.setText(self._text)
 
+    def _on_connector_clicked(self, side: str):
+        """
+        边缘“+”号被点击。
+        side: "left" 或 "right"
+        """
+        self.connector_clicked.emit(self, side)
+
     # ---- 拖拽相关事件 ----
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             # 检查点击位置是否在关闭按钮上，如果是则不触发拖拽
             click_pos = event.position().toPoint()
             if hasattr(self, '_close_button') and self._close_button.geometry().contains(click_pos):
+                # 让关闭按钮处理点击事件
+                super().mousePressEvent(event)
+                return
+            # 点击在左右“+”连接点上时，同样不触发拖拽
+            if hasattr(self, '_left_connector') and self._left_connector.geometry().contains(click_pos):
+                super().mousePressEvent(event)
+                return
+            if hasattr(self, '_right_connector') and self._right_connector.geometry().contains(click_pos):
                 # 让关闭按钮处理点击事件
                 super().mousePressEvent(event)
                 return
@@ -122,6 +155,7 @@ class BaseDraggableInfoWidget(QFrame):
                 new_x = max(0, min(new_pos.x(), parent.width() - self.width()))
                 new_y = max(0, min(new_pos.y(), parent.height() - self.height()))
                 self.move(new_x, new_y)
+                self.moved.emit()
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -135,3 +169,42 @@ class BaseDraggableInfoWidget(QFrame):
         super().resizeEvent(event)
         if hasattr(self, '_close_button'):
             self._close_button.move(self.width() - self._close_button.width() - 5, 5)
+        # 同时重新定位左右“+”连接点到组件左右两侧中间
+        if hasattr(self, '_left_connector'):
+            cy = self.height() // 2 - self._left_connector.height() // 2
+            # 略微移出边框，让按钮中心在边界上
+            self._left_connector.move(-self._left_connector.width() // 2, cy)
+        if hasattr(self, '_right_connector'):
+            cy = self.height() // 2 - self._right_connector.height() // 2
+            self._right_connector.move(self.width() - self._right_connector.width() // 2, cy)
+
+    def set_input_data(self,data):
+        self.input_data=data
+    def set_output_data(self,data):
+        self.output_data=data
+
+    def set_node_data(self,data):
+        self.node_data=data
+
+    def get_input_data(self)->dict:
+        res=self.input_data
+        return res
+    def get_output_data(self)->dict:
+        res=self.output_data
+        return res
+    def get_node_data(self)->dict:
+        res=self.node_data
+        return res
+
+    # ---- 提供给外部用于计算连线位置的辅助函数 ----
+    def get_connector_point(self, side: str) -> QPoint:
+        """
+        获取连接点在父组件坐标系中的坐标，用于画连线。
+        side: "left" / "right"
+        """
+        if side == "left":
+            local = QPoint(0, self.height() // 2)
+        else:
+            local = QPoint(self.width(), self.height() // 2)
+        # 映射到父组件坐标
+        return self.mapToParent(local)
