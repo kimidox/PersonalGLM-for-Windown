@@ -66,12 +66,46 @@ def parseMetadataFromSkill(skill_path: pathlib.Path) -> Optional[Dict[str, Any]]
     if not isinstance(metadata, dict):
         raise ValueError("Skill.md 中 YAML 元数据的根节点必须是一个对象（mapping）。")
 
-    # 补充skill_metadata信息
+    # 补充skill_metadata信息:location
     if "location" not in metadata:
         metadata["location"]=skill_file.as_posix()
-    return metadata
 
-def get_skill_xml_template(skill_metadata:dict)->str:
+    # 检查skill_metadata中是否有resource
+    if "resource" in metadata:
+        pass
+    else:
+        # 不存在，扫描skill包的目录结构
+        resources=extract_resources_from_skill_project(skill_path)
+        metadata["resource"]=resources
+
+
+    return metadata
+def extract_resources_from_skill_project(skill_path_root:pathlib.Path)->list[dict]:
+    resources=[]
+    ignore = [".git", "__pycache__", "node_modules", ".DS_Store"]
+    # 递归扫描目录
+    for file_path in skill_path_root.rglob("*"):
+        # 跳过目录和忽略项
+        if file_path.is_dir() or any(ignored in str(file_path) for ignored in ignore):
+            continue
+
+        # 生成资源元数据
+        res_name = file_path.name
+        res_path = str(file_path.resolve())
+        res_type = "".join(file_path.suffixes)
+        res_size = file_path.stat().st_size
+        res_exists = file_path.exists()
+        resource={
+            "name":res_name,
+            "path":res_path,
+            "type":res_type,
+            "size":res_size,
+            "exists":res_exists
+        }
+        resources.append(resource)
+    return resources
+
+def get_skill_base_metadata_xml_template(skill_metadata:dict)->str:
     """
     根据 skill_metadata 生成 skill 的 xml 模板
     :param skill_metadata:
@@ -89,7 +123,7 @@ def get_skill_xml_template(skill_metadata:dict)->str:
     xml_template = xml_template.strip()
     return xml_template
 
-def get_skills_xml_template(skill_metadata_list:list[dict])->str:
+def get_skills_base_metadata_xml_template(skill_metadata_list:list[dict])->str:
     if not skill_metadata_list:
         return ""
     # 初始化skill子节点的拼接容器
