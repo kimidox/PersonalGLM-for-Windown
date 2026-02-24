@@ -5,6 +5,6 @@ def get_project_path():
 
 
 if  __name__ == '__main__':
-    project_pathe=get_project_path()
+    project_path=get_project_path()
 
-    print(project_pathe)
+    print(project_path)

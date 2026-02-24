@@ -2,6 +2,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from subprocess import Popen
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -23,7 +24,7 @@ class ReloadHandler(FileSystemEventHandler):
 
 def main():
     project_root = Path(__file__).parent
-    app_process = None
+    app_process:Popen|None = None
 
     def start_app():
         nonlocal app_process
