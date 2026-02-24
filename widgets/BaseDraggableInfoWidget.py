@@ -1,4 +1,5 @@
 import uuid
+from abc import abstractmethod, ABC
 
 from PySide6.QtWidgets import QFrame, QPushButton, QLineEdit, QLabel, QStackedWidget, QHBoxLayout, QVBoxLayout
 from PySide6.QtCore import Qt, QPoint, Signal
@@ -19,7 +20,7 @@ class BaseDraggableInfoWidget(QFrame):
     output_data={}
     node_data={}
 
-    def __init__(self, parent=None,name=None):
+    def __init__(self, parent=None,name=None,code=None):
         super().__init__(parent)
         self.setFrameShape(QFrame.StyledPanel)
         self.setFixedSize(220, 150)
@@ -27,24 +28,14 @@ class BaseDraggableInfoWidget(QFrame):
         self._drag_offset = QPoint(0, 0)
         self.id=str(uuid.uuid4())
         self._mode = "button"
-        self._text = f"{name}"
-        self._title_label_text="可拖拽信息组件"
+        self._text = f"编辑"
+
 
         self._button = QPushButton(self._text, self)
         self._button.clicked.connect(self._on_button_clicked)
 
-        self._line_edit = QLineEdit(self)
-        self._line_edit.setText(self._title_label_text)
-        self._line_edit.editingFinished.connect(self._on_text_changed)
-
-        # 创建标题标签
-        self._title_label = QLabel(self._title_label_text, self)
-        self._title_label.setObjectName("draggableInfoTitle")
-
-        # 使用 QStackedWidget：同一区域切换显示“标题”或“输入框”，避免布局跳动
-        self._stacked = QStackedWidget(self)
-        self._stacked.addWidget(self._title_label)   # 索引 0：button 模式
-        self._stacked.addWidget(self._line_edit)     # 索引 1：editable 模式
+        # 由（可能的）子类负责组装 self._stacked，父类只负责放入布局
+        self._stacked = self._build_stacked_widget()
 
         # 创建右上角关闭按钮
         self._close_button = QPushButton("×", self)
@@ -78,43 +69,41 @@ class BaseDraggableInfoWidget(QFrame):
         layout.addWidget(self._button)
         self.setLayout(layout)
 
+    def _build_stacked_widget(self) -> QStackedWidget:
+        # 子类实现
+        pass
+
     def _on_close_clicked(self):
         """关闭按钮被点击时，发送删除信号"""
         self.delete_requested.emit(self)
 
     # ---- 模式切换相关 ----
+
     def set_mode(self, mode: str):
-        """
-        mode: "button" / "editable"
-        """
-        if mode not in ("button", "editable"):
-            return
-        self._mode = mode
-        if mode == "button":
-            self._title_label.setText(self._title_label_text)
-            self._stacked.setCurrentIndex(0)  # 显示标题页
-        else:
-            self._line_edit.setText(self._title_label_text)
-            self._stacked.setCurrentIndex(1)  # 显示输入框页
+        # 子类实现
+        pass
 
     def mode(self) -> str:
         return self._mode
 
-    def set_text(self, text: str):
-        self._text = text
-        self._button.setText(text)
-        self._line_edit.setText(text)
 
     def text(self) -> str:
         return self._text
 
     def _on_button_clicked(self):
-        print(f"[DraggableInfoWidget] 按钮被点击，当前文本: {self._text}")
+        """
+        点击组件上的“编辑”按钮，在按钮模式与可编辑文本模式之间切换。
+        """
+        if self._mode == "button":
+            # 进入可编辑模式
+            self.set_mode("editable")
+            self._button.setText("保存")
+        else:
+            # 返回按钮模式
+            self.set_mode("button")
+            self._button.setText("编辑")
 
-    def _on_text_changed(self):
-        text = self._line_edit.text()
-        self._title_label_text=text
-        # self._button.setText(self._text)
+
 
     def _on_connector_clicked(self, side: str):
         """

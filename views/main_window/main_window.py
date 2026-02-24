@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 
 from widgets.BaseDraggableInfoWidget import BaseDraggableInfoWidget
 from widgets.ConnectionOverlay import ConnectionOverlay
+from widgets.StartNodeDraggableInfoWidget import StartNodeDraggableInfoWidget
 
 
 class MainWindow(QMainWindow):
@@ -35,25 +36,20 @@ class MainWindow(QMainWindow):
         top_layout.setContentsMargins(10, 10, 10, 10)
         top_layout.setSpacing(12)
 
-        mode_label = QLabel("信息组件模式：", top_bar)
-        self.mode_combo = QComboBox(top_bar)
-        self.mode_combo.addItem("按钮模式", userData="button")
-        self.mode_combo.addItem("可编辑文本模式", userData="editable")
-        self.mode_combo.currentIndexChanged.connect(self.on_mode_changed)
-
         hint_label = QLabel("提示：按aaa住信息组件区域空白处拖拽即可移动位置。", top_bar)
         hint_label.setObjectName("hintLabel")
 
-        create_draggableInfowidget=QPushButton("创建可拖拽信息组件", top_bar)
-        create_draggableInfowidget.clicked.connect(self.create_draggableInfowidget)
+        # 下拉选项框：选择“开始节点”时创建可拖拽信息组件
+        self.node_combo = QComboBox(top_bar)
+        self.node_combo.addItem("开始节点")
+        self.node_combo.activated.connect(self.on_node_selected)
 
         save_push_button=QPushButton("保存",top_bar)
         save_push_button.clicked.connect(self.save_arrangement_infos)
 
-        top_layout.addWidget(mode_label)
-        top_layout.addWidget(self.mode_combo)
+        # 顶部不再使用全局模式切换，下方每个节点通过自己的“编辑”按钮切换模式
         top_layout.addStretch(1)
-        top_layout.addWidget(create_draggableInfowidget)
+        top_layout.addWidget(self.node_combo)
         top_layout.addWidget(save_push_button)
         top_layout.addWidget(hint_label)
 
@@ -106,16 +102,16 @@ class MainWindow(QMainWindow):
                 # 如果样式读取失败，保持默认样式
                 pass
 
-    def on_mode_changed(self, index: int):
-        mode = self.mode_combo.itemData(index)
-        for info_widget in self.dragableInfowidgets:
-            info_widget.set_mode(mode)
+    def on_node_selected(self, index: int):
+        text = self.node_combo.itemText(index)
+        if text == "开始节点":
+            self.create_draggableInfowidget(class_name=StartNodeDraggableInfoWidget)
 
-    def create_draggableInfowidget(self):
+    def create_draggableInfowidget(self,class_name=BaseDraggableInfoWidget):
         print("[MainWindow] 创建可拖拽信息组件")
         # 在 canvas 上创建一个可拖拽组件
-        name=str(len(self.dragableInfowidgets) + 1)
-        info_widget = BaseDraggableInfoWidget(self.canvas, name=f"信息组件_{name}")
+        id=str(len(self.dragableInfowidgets) + 1)
+        info_widget = class_name(self.canvas, code=f"信息组件_{id}")
         info_widget.move(50, 50)
         info_widget.show()
         info_widget.raise_()
