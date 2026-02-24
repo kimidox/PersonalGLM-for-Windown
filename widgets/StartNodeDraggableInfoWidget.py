@@ -21,6 +21,7 @@ class StartNodeDraggableInfoWidget(BaseDraggableInfoWidget):
     input_data={}
     output_data={}
     node_data={}
+    node_type="StartNode"
 
     def __init__(self, parent=None,name="开始节点",code=None):
         super().__init__(parent,name,code)

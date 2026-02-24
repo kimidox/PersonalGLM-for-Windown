@@ -19,7 +19,7 @@ class BaseDraggableInfoWidget(QFrame):
     input_data={}
     output_data={}
     node_data={}
-
+    node_type="BaseNode"
     def __init__(self, parent=None,name=None,code=None):
         super().__init__(parent)
         self.setFrameShape(QFrame.StyledPanel)
