@@ -1,23 +1,20 @@
-import uuid
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QPoint, Signal
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
     QPushButton,
-    QLineEdit,
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QFrame,
     QComboBox,
     QStackedWidget,
 )
 
 from widgets.BaseDraggableInfoWidget import BaseDraggableInfoWidget
-from widgets.ConnectionOverlay import ConnectionOverlay
 from widgets.StartNodeDraggableInfoWidget import StartNodeDraggableInfoWidget
+from views.main_window.pending_window import PendingWindow
+from views.main_window.base_agent_chat_window import BaseAgentChatWindow
 
 
 class MainWindow(QMainWindow):
@@ -36,6 +33,11 @@ class MainWindow(QMainWindow):
         top_layout.setContentsMargins(10, 10, 10, 10)
         top_layout.setSpacing(12)
 
+        BaseAgentChatButton=QPushButton("基础对话框",parent=top_bar)
+        BaseAgentChatButton.setObjectName("BaseAgentChatButton")
+        BaseAgentChatButton.clicked.connect(self.change_center_area_to_base_agent_chat)
+
+
         hint_label = QLabel("提示：按aaa住信息组件区域空白处拖拽即可移动位置。", top_bar)
         hint_label.setObjectName("hintLabel")
 
@@ -48,19 +50,28 @@ class MainWindow(QMainWindow):
         save_push_button.clicked.connect(self.save_arrangement_infos)
 
         # 顶部不再使用全局模式切换，下方每个节点通过自己的“编辑”按钮切换模式
+        top_layout.addWidget(BaseAgentChatButton)
+        # addStretch()会添加一个可伸缩的空白区域
         top_layout.addStretch(1)
         top_layout.addWidget(self.node_combo)
         top_layout.addWidget(save_push_button)
         top_layout.addWidget(hint_label)
 
-        # 中心区域，用来放置可拖拽信息组件
-        self.canvas = QFrame(self)
-        self.canvas.setObjectName("canvas")
+        # 中心区域：画布页（可拖拽节点 + 连线）
+        self.pending_window = PendingWindow(self)
+        self.canvas = self.pending_window.canvas
+        self.connection_overlay = self.pending_window.connection_overlay
 
-        # 连线覆盖层：在画布上绘制连接线，置于组件下方
-        self.connection_overlay = ConnectionOverlay(self.canvas)
-        self.connection_overlay.setGeometry(self.canvas.rect())
-        self.connection_overlay.lower()
+        # 中心区域堆叠：0=画布，1=基础对话框内嵌窗口（点击按钮切换）
+        self.center_stacked = QStackedWidget(self)
+        self.center_stacked.addWidget(self.pending_window)
+
+        # 基础对话框内嵌窗口
+        self.base_agent_chat_window = BaseAgentChatWindow(self)
+        self.center_stacked.addWidget(self.base_agent_chat_window)
+
+        # 设置默认窗口为基础对话窗口
+        self.center_stacked.setCurrentIndex(1)
 
         # 两段式连线：第一次点击记录“起点”，第二次点击记录“终点”并画线
         self._pending_connection = None  # None 或 (widget, side)
@@ -72,7 +83,7 @@ class MainWindow(QMainWindow):
         central_layout.setSpacing(10)
 
         central_layout.addWidget(top_bar)
-        central_layout.addWidget(self.canvas, 1)
+        central_layout.addWidget(self.center_stacked, 1)
 
         self.setCentralWidget(central)
 
@@ -86,8 +97,8 @@ class MainWindow(QMainWindow):
         self._update_overlay_geometry()
 
     def _update_overlay_geometry(self):
-        if hasattr(self, "connection_overlay") and self.connection_overlay and hasattr(self, "canvas"):
-            self.connection_overlay.setGeometry(self.canvas.rect())
+        if hasattr(self, "pending_window") and self.pending_window:
+            self.pending_window._update_overlay_geometry()
 
     def _load_styles(self):
         """
@@ -156,6 +167,15 @@ class MainWindow(QMainWindow):
         self._pending_connection = None
         print(f"[MainWindow] 已连线: {source_widget.id} {source_side} -> {widget.id} {side}")
 
+    def change_center_area_to_base_agent_chat(self):
+        """点击「基础对话框」按钮：在画布(0)与基础对话框(1)之间切换。"""
+        idx = self.center_stacked.currentIndex()
+        if idx==0:
+            # 切换为基础对话框
+            self.center_stacked.setCurrentIndex(1)
+        else:
+            # 切换为画布
+            self.center_stacked.setCurrentIndex(0)
     @staticmethod
     def get_object_widget():
         res=MainWindow.dragableInfowidgets

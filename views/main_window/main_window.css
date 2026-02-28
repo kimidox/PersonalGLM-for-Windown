@@ -68,3 +68,15 @@ QFrame#canvas {
     border: 1px solid #323438;
 }
 
+/* 基础对话框内嵌窗口 */
+QFrame#baseAgentChatWidget {
+    background-color: #1a1c1e;
+    border-radius: 8px;
+    border: 1px solid #323438;
+}
+
+QLabel#baseAgentChatTitle {
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
