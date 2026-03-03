@@ -80,3 +80,12 @@ QLabel#baseAgentChatTitle {
     font-size: 14px;
 }
 
+/* 基础对话框中的单条消息气泡：白底黑字 */
+QTextBrowser#messageTextBrowser {
+    background-color: #ffffff;
+    color: #000000;
+    border-radius: 6px;
+    border: none;
+    padding: 6px 8px;
+}
+
